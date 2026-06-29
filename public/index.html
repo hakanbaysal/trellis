@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trellis — Hierarchical MCP Gateway</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">▚</span>
+        <div>
+          <h1>Trellis</h1>
+          <p>Arrange your MCP servers into one gated hierarchy.</p>
+        </div>
+      </div>
+      <a class="ghost" href="https://github.com/" target="_blank" rel="noreferrer">GitHub ↗</a>
+    </header>
+
+    <main class="layout">
+      <!-- LEFT: input + saved -->
+      <section class="panel">
+        <h2>1 · Paste your IDE's MCP config</h2>
+        <p class="hint">
+          Copy the <code>mcpServers</code> block from your IDE (Cursor, Claude Code, VS Code…)
+          and paste it here.
+        </p>
+        <textarea id="input" spellcheck="false" placeholder='{ "mcpServers": { ... } }'></textarea>
+        <div class="row">
+          <button id="parseBtn" class="primary">Parse servers</button>
+          <button id="sampleBtn" class="ghost">Load example</button>
+        </div>
+        <div id="parseError" class="error" hidden></div>
+
+        <h2 class="mt">Saved hierarchies</h2>
+        <ul id="savedList" class="saved"></ul>
+      </section>
+
+      <!-- RIGHT: board -->
+      <section class="panel grow">
+        <div class="board-head">
+          <h2>2 · Arrange the hierarchy</h2>
+          <input id="nameInput" class="name" placeholder="Hierarchy name (e.g. backend-flow)" />
+        </div>
+        <p class="hint">
+          <strong>Drop a server onto another to nest it underneath.</strong>
+          A server only unlocks after its parents have been used; servers under the
+          same parent are the model's free choice.
+        </p>
+
+        <div class="bucket">
+          <div class="bucket-head">
+            <span>Ungated</span>
+            <span class="sub">always available · outside the order · not part of reset</span>
+          </div>
+          <div class="zone unassigned" data-zone="unassigned" id="unassigned"></div>
+        </div>
+
+        <div class="bucket">
+          <div class="bucket-head">
+            <span>Hierarchy</span>
+            <span class="sub">drop onto a server to nest · drop on empty space for a top-level server</span>
+          </div>
+          <div class="zone roots" data-zone="roots" id="roots"></div>
+        </div>
+
+        <div class="row">
+          <button id="saveBtn" class="primary">Save &amp; generate MCP JSON</button>
+        </div>
+        <div id="saveError" class="error" hidden></div>
+
+        <!-- OUTPUT -->
+        <div id="output" class="output" hidden>
+          <h2>3 · Paste this back into your IDE</h2>
+          <p class="hint">One server entry replaces all of the above. The hierarchy lives inside the gateway.</p>
+          <pre id="outputJson"></pre>
+          <div class="row">
+            <button id="copyBtn" class="primary">Copy</button>
+            <span id="gatewayUrl" class="url"></span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,21 @@
+services:
+  trellis:
+    build: .
+    image: trellis:latest
+    container_name: trellis
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      PORT: 8080
+      DATA_DIR: /data
+      # Must match how your IDE reaches the gateway. For a local IDE, the default
+      # localhost URL is correct because the port is published above.
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8080}
+      MAX_TOOL_RETRIES: ${MAX_TOOL_RETRIES:-3}
+      IDLE_RESET_MS: ${IDLE_RESET_MS:-0}
+    volumes:
+      - trellis-data:/data
+    restart: unless-stopped
+
+volumes:
+  trellis-data:
