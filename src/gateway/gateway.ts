@@ -118,8 +118,15 @@ export function buildGatewayServer(
         return result;
       } catch (err) {
         lastErr = err;
+        console.warn(
+          `[upstream] "${parsed.server}" tool "${parsed.tool}" attempt ${attempt}/${config.maxToolRetries} failed: ` +
+            String((err as Error)?.message ?? err)
+        );
       }
     }
+    console.warn(
+      `[upstream] "${parsed.server}" SKIPPED after ${config.maxToolRetries} failed attempts (branch allowed to proceed).`
+    );
     tracker.markResponded(serverId); // skip: counts toward completion
     return textResult(
       `Upstream "${parsed.server}" failed after ${config.maxToolRetries} attempts and was SKIPPED ` +

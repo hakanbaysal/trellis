@@ -16,21 +16,29 @@ export interface UpstreamTool {
  * while hierarchy state stays per-session.
  */
 class UpstreamConnection {
-  private client: Client;
-  private connectPromise: Promise<void> | null = null;
+  private client: Client | null = null;
+  private connectPromise: Promise<Client> | null = null;
 
-  constructor(public def: UpstreamServerDef) {
-    this.client = new Client(
-      { name: `trellis-proxy/${def.name}`, version: "0.1.0" },
-      { capabilities: {} }
-    );
-  }
+  constructor(public def: UpstreamServerDef) {}
 
-  private async connect(): Promise<void> {
+  private async connect(): Promise<Client> {
     if (!this.connectPromise) {
-      this.connectPromise = this.client.connect(this.makeTransport()).catch((err) => {
-        // allow a later retry to reconnect
+      // Build a FRESH client + transport per connect attempt. A Client that
+      // failed to connect stays bound to its (dead) transport, so reusing it
+      // would make every retry fail with "Already connected to a transport"
+      // and mask the real first-attempt error.
+      this.connectPromise = (async () => {
+        const client = new Client(
+          { name: `trellis-proxy/${this.def.name}`, version: "0.1.0" },
+          { capabilities: {} }
+        );
+        await client.connect(this.makeTransport());
+        this.client = client;
+        return client;
+      })().catch((err) => {
+        // allow a later retry to build a brand-new client + transport
         this.connectPromise = null;
+        this.client = null;
         throw err;
       });
     }
@@ -59,23 +67,27 @@ class UpstreamConnection {
   }
 
   async listTools(): Promise<UpstreamTool[]> {
-    await this.connect();
-    const res = await this.client.listTools();
+    const client = await this.connect();
+    const res = await client.listTools();
     return res.tools as UpstreamTool[];
   }
 
   async callTool(name: string, args: unknown) {
-    await this.connect();
-    return this.client.callTool({ name, arguments: (args as Record<string, unknown>) ?? {} });
+    const client = await this.connect();
+    return client.callTool({ name, arguments: (args as Record<string, unknown>) ?? {} });
   }
 
   async close(): Promise<void> {
-    try {
-      await this.client.close();
-    } catch {
-      /* ignore */
-    }
+    const client = this.client;
+    this.client = null;
     this.connectPromise = null;
+    if (client) {
+      try {
+        await client.close();
+      } catch {
+        /* ignore */
+      }
+    }
   }
 }
 
